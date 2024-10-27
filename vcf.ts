@@ -23,6 +23,7 @@ class vcfContact {
 
 export class vcfParser {
     public contacts: vcfContact [];
+    public result_log: string;
 
     public to_console(): void {
         console.log('/***** Contacts : *****/');
@@ -37,7 +38,17 @@ export class vcfParser {
         this.cursor = new vcfCursor(0,0,0);
         this.tokens = [];
 
-        this.parse();
+        while (this.cursor.pos < this.file_content.length)
+        {
+            let temp_cursor: vcfCursor = new vcfCursor(this.cursor.pos, this.cursor.row, this.cursor.col);
+            this.tokenise(temp_cursor);
+        }
+
+        for (let i: number = 0; i < this.tokens.length; i++){
+             if (this.validateToken(i) === -1) return;
+        }
+
+        this.result_log = 'File parsed successfully.'
     };
 
     private file_content: string;
@@ -69,9 +80,7 @@ export class vcfParser {
 
             if (vcfGetTokenEnum(char) === vcfTokenEnum.BEGIN_EOL){
                 char = this.chop_char();
-            }
-
-            if (vcfGetTokenEnum(char) === vcfTokenEnum.EOL){
+            } else if (vcfGetTokenEnum(char) === vcfTokenEnum.EOL){
                 this.cursor.row++;
                 this.cursor.col = 0;
             }
@@ -141,29 +150,80 @@ export class vcfParser {
         }
     }
 
-    private parse(): void {
-        this.cursor.pos = 0;
-        let i: number = 0;
-        while (this.cursor.pos < this.file_content.length)
-        {
-            let temp_cursor: vcfCursor = new vcfCursor(this.cursor.pos, this.cursor.row, this.cursor.row);
-            this.tokenise(temp_cursor);
-
-            i++;
-        }
-
+    private GetSyntaxErrorMessage(tokenIndex: number, error_message: string): string {
         let buffer: string = '';
-        for ( let i: number = 0; i < this.tokens.length; i++) {
-            buffer += vcfGetTokenEnumString(this.tokens[i].id);
-            buffer += ' : "';
-            if (this.tokens[i].id != vcfTokenEnum.EOL) buffer += this.GetTokenValue(i);
-            buffer += '"';
-            buffer += '\r\n';
-        }
+        buffer += 'Syntax Error at line ';
+        buffer += ++(this.tokens[tokenIndex].begin.row);
+        buffer += ', collumn ';
+        buffer += ++(this.tokens[tokenIndex].begin.col);
+        buffer += ': \'';
+        buffer += this.GetTokenValue(tokenIndex);
+        buffer += '\': ';
+        buffer += error_message;
+        return buffer;
+    }
 
-        fs.writeFile('vcfTokens.txt', buffer, (err) => {
-            if (err) throw err;
-            console.log('Fichier créé et contenu écrit avec succès');
-        });
+    private validateToken(tokenIndex: number): number {
+        switch (this.tokens[tokenIndex].id)
+        {   
+            case vcfTokenEnum.SEMI_COLON:
+                break;
+            case vcfTokenEnum.COLON:
+                if (this.tokens[tokenIndex - 1].id === vcfTokenEnum.COLON || this.tokens[tokenIndex + 1].id === vcfTokenEnum.COLON ) {
+                    this.result_log = this.GetSyntaxErrorMessage(tokenIndex, "Colons cannot be close to each others.");
+                    return -1;
+                }
+                break;
+            case vcfTokenEnum.EQUAL:
+                break;
+            case vcfTokenEnum.BEGIN_EOL:
+                break;
+            case vcfTokenEnum.EOL:
+                break;
+            case vcfTokenEnum.EOF:
+                break;
+            case vcfTokenEnum.VCARD:
+                if (this.tokens[tokenIndex - 2].id !== vcfTokenEnum.BEGIN && this.tokens[tokenIndex - 2].id !== vcfTokenEnum.END) {
+                    this.result_log = this.GetSyntaxErrorMessage(tokenIndex, "Unknown identifier found before the token.");
+                    return -1
+                }
+                break;
+            case vcfTokenEnum.VERSION:
+                break;
+            case vcfTokenEnum.BEGIN:
+                if (this.tokens[tokenIndex + 2].id !== vcfTokenEnum.VCARD || this.tokens[tokenIndex + 1].id !== vcfTokenEnum.COLON ) {
+                    this.result_log = this.GetSyntaxErrorMessage(tokenIndex, "Identifier expected");
+                    return -1
+                }
+                break;
+            case vcfTokenEnum.END:
+                if (this.tokens[tokenIndex + 2].id !== vcfTokenEnum.VCARD || this.tokens[tokenIndex + 1].id !== vcfTokenEnum.COLON ) {
+                    this.result_log = this.GetSyntaxErrorMessage(tokenIndex, "Identifier expected");
+                    return -1
+                }
+                break;
+            case vcfTokenEnum.N:
+                break;
+            case vcfTokenEnum.FN:
+                break;
+            case vcfTokenEnum.TEL:
+                break;
+            case vcfTokenEnum.ORG:
+                break;
+            case vcfTokenEnum.HOME:
+                break;
+            case vcfTokenEnum.EMAIL:
+                break;
+            case vcfTokenEnum.PREF:
+                break;
+            case vcfTokenEnum.LITTERAL:
+                if (this.tokens[tokenIndex - 1].id === vcfTokenEnum.LITTERAL || this.tokens[tokenIndex + 1].id === vcfTokenEnum.LITTERAL) {
+                    this.result_log = this.GetSyntaxErrorMessage(tokenIndex, "Litterals cannot be closed to each others.");
+                    return -1
+                }
+                break;
+            default: return 0;
+        }
+        return 0;
     }
 }

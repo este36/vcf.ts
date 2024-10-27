@@ -31,6 +31,7 @@ export enum vcfTokenEnum {
     FN,
     TEL,
     ORG,
+    HOME,
     EMAIL,
     PREF,
     LITTERAL
@@ -54,6 +55,7 @@ export function vcfGetTokenEnumString( t :vcfTokenEnum): string {
         case vcfTokenEnum.FN: return 'FN';
         case vcfTokenEnum.TEL: return 'TEL';
         case vcfTokenEnum.ORG: return 'ORG';
+        case vcfTokenEnum.HOME: return 'HOME';
         case vcfTokenEnum.EMAIL: return 'EMAIL';
         case vcfTokenEnum.PREF: return 'PREF';
         case vcfTokenEnum.LITTERAL: return 'LITTERAL';
@@ -80,7 +82,8 @@ export function vcfGetTokenEnum(in_str: string): vcfTokenEnum {
         case 'N': return vcfTokenEnum.N;        
         case 'FN': return vcfTokenEnum.FN;        
         case 'TEL': return vcfTokenEnum.TEL;        
-        case 'ORG': return vcfTokenEnum.ORG;        
+        case 'ORG': return vcfTokenEnum.ORG;
+        case 'HOME': return vcfTokenEnum.HOME;
         case 'EMAIL': return vcfTokenEnum.EMAIL;        
         case 'PREF': return vcfTokenEnum.PREF;        
         case 'LITTERAL': return vcfTokenEnum.LITTERAL;
